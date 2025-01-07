@@ -29,20 +29,21 @@ void Tema::Init()
 {
 
     auto camera = GetSceneCamera();
+    camera->SetPosition(glm::vec3(0, 10, 10));
 
-    // Relative position of the camera from the helicopter
-    glm::vec3 relativeCameraPosition = glm::vec3(0.0f, 12.0f, 3.0f);
+    //// Relative position of the camera from the helicopter
+    //glm::vec3 relativeCameraPosition = glm::vec3(0.0f, 12.0f, 3.0f);
 
-    // Rotate the relative position based on the helicopter's rotation (if needed)
-    glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotation_oy, glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::vec3 rotatedCameraPosition = glm::vec3(rotationMatrix * glm::vec4(relativeCameraPosition, 1.0f));
+    //// Rotate the relative position based on the helicopter's rotation (if needed)
+    //glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotation_oy, glm::vec3(0.0f, 1.0f, 0.0f));
+    //glm::vec3 rotatedCameraPosition = glm::vec3(rotationMatrix * glm::vec4(relativeCameraPosition, 1.0f));
 
-    // Set the camera's position relative to the helicopter
-    glm::vec3 cameraPosition = helicopterPosition + rotatedCameraPosition;
-    camera->SetPosition(cameraPosition);
+    //// Set the camera's position relative to the helicopter
+    //glm::vec3 cameraPosition = helicopterPosition + rotatedCameraPosition;
+    //camera->SetPosition(cameraPosition);
 
-    // Make the camera look at the helicopter
-    camera->SetRotation(glm::quatLookAt(glm::normalize(helicopterPosition - cameraPosition), glm::vec3(0.0f, 1.0f, 0.0f)));
+    //// Make the camera look at the helicopter
+    //camera->SetRotation(glm::quatLookAt(glm::normalize(helicopterPosition - cameraPosition), glm::vec3(0.0f, 1.0f, 0.0f)));
 
 
     ///// Load textures
@@ -87,6 +88,11 @@ void Tema::Init()
 
     {
         Mesh* mesh = CreateCustomCube("maroon_cube", 4, glm::vec3(0.6627f, 0.4784f, 0.3412f));
+        meshes[mesh->GetMeshID()] = mesh;
+    }
+
+    {
+        Mesh* mesh = CreateCustomCube("tree_part", 4, glm::vec3(1, 1, 1));
         meshes[mesh->GetMeshID()] = mesh;
     }
 
@@ -146,19 +152,19 @@ void Tema::Update(float deltaTimeSeconds)
     //}
 
     //// asteroid
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glm::mat4 modelMatrix = glm::mat4(1);
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(0, 0, 0));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(2.0f));
-        RenderComplexMesh(meshes["wireframe"], shaders["Curvature"], modelMatrix, mapTextures["ground"], mapTextures["snow"], mapTextures["noise"]);
-    }
+    //{
+    //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    //    glm::mat4 modelMatrix = glm::mat4(1);
+    //    modelMatrix = glm::translate(modelMatrix, glm::vec3(0, 0, 0));
+    //    modelMatrix = glm::scale(modelMatrix, glm::vec3(2.0f));
+    //    RenderComplexMesh(meshes["wireframe"], shaders["Curvature"], modelMatrix, mapTextures["ground"], mapTextures["snow"], mapTextures["noise"]);
+    //}
 
 
 
 
     /* HELICOPTER */
-
+    /*
     glm::mat4 helicopterMatrix = glm::mat4(1.0f);
     helicopterMatrix = glm::translate(helicopterMatrix, helicopterPosition);
     helicopterMatrix = glm::rotate(helicopterMatrix, rotation_oy, glm::vec3(0, 1, 0));
@@ -176,7 +182,7 @@ void Tema::Update(float deltaTimeSeconds)
         //modelMatrix = glm::translate(modelMatrix, glm::vec3(-1, 0, 0));
         RenderMesh(meshes["green_cube"], shaders["SimpleShader"], modelMatrix);
     }
-    
+
     // corp elicopter
     {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -261,7 +267,66 @@ void Tema::Update(float deltaTimeSeconds)
         RenderMesh(meshes["maroon_cube"], shaders["SimpleShader"], modelMatrix);
     }
 
+    */
 
+
+    /* TREE */
+/*
+    float java = 1.0f; // unitate
+
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glm::mat4 branchMatrix = glm::mat4(1.0f);
+
+        //branchul de pe colt2
+        branchMatrix = glm::translate(branchMatrix, glm::vec3( 3 * java / 4, 5 * java - java / 2, 2 * java / 3));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(30.0f), glm::vec3(1, 0, 0));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(-30.0f), glm::vec3(0, 0, 1));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(360.0f), glm::vec3(0, 1, 0));
+        branchMatrix = glm::scale(branchMatrix, glm::vec3(java / 8, java / 2, java / 8));
+        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+    }
+
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glm::mat4 branchMatrix = glm::mat4(1.0f);
+        //branchul de pe colt1
+        branchMatrix = glm::translate(branchMatrix, glm::vec3(- 3 * java /4, 5 * java - java/2, 2* java / 3));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(45.0f), glm::vec3(1, 0, 1));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(240.0f), glm::vec3(0, 1, 0));
+        branchMatrix = glm::scale(branchMatrix, glm::vec3(java / 8, java/2, java / 8));
+        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+    }
+
+    {
+        //branchul de pe latura
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glm::mat4 branchMatrix = glm::mat4(1.0f);
+        branchMatrix = glm::translate(branchMatrix, glm::vec3(0, 5 * java - java / 2, -java));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(-45.0f), glm::vec3(1, 0, 0));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(120.0f), glm::vec3(0, 1, 0));
+        branchMatrix = glm::scale(branchMatrix, glm::vec3(java / 8, java / 2, java / 8));
+        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+    }
+
+    {
+        //trunchi
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glm::mat4 branchMatrix = glm::mat4(1.0f);
+        branchMatrix = glm::translate(branchMatrix, glm::vec3(0, 2 * java, 0));
+        branchMatrix = glm::scale(branchMatrix, glm::vec3(java / 4, java, java / 4));
+        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+    }
+
+    */
+
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glm::mat4 baseMatrix = glm::mat4(1);
+        int maxlevel = 2;
+        float initialjava = 1.0f;
+        DrawTreeRecursive(maxlevel, maxlevel, baseMatrix, initialjava);
+    }
 
 }
 
@@ -346,12 +411,12 @@ Mesh* Tema::CreateCustomCube(const std::string& meshName, float sideLength, cons
     glm::vec3 color_top = color;
     glm::vec3 color_bottom = color;
 
-    //color_front = glm::vec3(1.0f, 0.0f, 0.486f);
-    //color_back = glm::vec3(0.373f, 1.0f, 0.0f);
-    //color_left = glm::vec3(0.0f, 1.0f, 0.706f);
-    //color_right = glm::vec3(1.0f, 0.5f, 0.0f);
-    //color_top = glm::vec3(0.2f, 0.4f, 0.669f);
-    //color_bottom = glm::vec3(0.0f, 0.769f, 1.0f);
+    color_front = glm::vec3(1.0f, 0.0f, 0.486f);
+    color_back = glm::vec3(0.373f, 1.0f, 0.0f);
+    color_left = glm::vec3(0.0f, 1.0f, 0.706f);
+    color_right = glm::vec3(1.0f, 0.5f, 0.0f);
+    color_top = glm::vec3(0.2f, 0.4f, 0.669f);
+    color_bottom = glm::vec3(0.0f, 0.769f, 1.0f);
 
     std::vector<VertexFormat> vertices =
     {
@@ -412,6 +477,162 @@ Mesh* Tema::CreateCustomCube(const std::string& meshName, float sideLength, cons
     cubeMesh->InitFromData(vertices, indices);
     return cubeMesh;
 }
+
+
+
+void Tema::DrawTreeRecursive(int level,
+    int maxLevel,
+    const glm::mat4& parentMatrix,
+    float java)
+{
+    // 1) Draw the trunk ONLY if we are at the top level
+    //    so it’s drawn exactly once.
+    if (level == maxLevel)
+    {
+        glm::mat4 trunkMatrix = parentMatrix;
+
+        // Your trunk logic (unchanged from snippet)
+        trunkMatrix = glm::translate(trunkMatrix, glm::vec3(0, 2 * java, 0));
+        trunkMatrix = glm::scale(trunkMatrix, glm::vec3(java / 4, java, java / 4));
+
+        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], trunkMatrix);
+    }
+
+    // 2) If there are still levels left, spawn branches
+    if (level > 0)
+    {
+        // We'll expand translations by a factor that grows each level downward
+        // so branches move farther away from the trunk each recursion.
+        // For example, factor = (maxLevel - level + 1).
+        float java = 1.0f;
+        float l0 = 4 * java;
+        float c = - java / 2;
+        float factor_y = 0.0f;
+
+        float factor_x = 3 * java / 4.0f;
+        float factor_z = 2 * java / 3.0f;
+
+        int i = 0;
+
+        for (i = 0; i <= level; i++) {
+            if (i == level) {
+                factor_y = factor_y + 4 * java / float(std::pow(2, (i + 1)));
+            }
+            else {
+                factor_y = factor_y + 4 * java / float(std::pow(2, i));
+
+                if (i > 0) {
+                    factor_x = factor_x + factor_x / 2;
+                    factor_z = factor_z + factor_z / 2;
+                }
+            }
+
+            
+
+        }
+        factor_y = factor_y + c / float(std::pow(2, (level - 1)));
+        std::cout << "The value of myFloat is: " << factor_y << std::endl;
+        
+        
+
+        
+
+        // === Branch 1 (like your "colt2") ===============================
+        {
+            glm::mat4 branchMatrix = parentMatrix;
+
+            // Expand the translation coordinates by 'factor'
+            branchMatrix = glm::translate(
+                branchMatrix,
+                glm::vec3(
+                    factor_x,
+                    factor_y,
+                    factor_z
+                ));
+            // Angles stay the same as your snippet
+            branchMatrix = glm::rotate(branchMatrix,
+                glm::radians(30.0f),
+                glm::vec3(1, 0, 0));
+            branchMatrix = glm::rotate(branchMatrix,
+                glm::radians(-30.0f),
+                glm::vec3(0, 0, 1));
+            // If you had a Y rotation, keep it:
+            // branchMatrix = glm::rotate(branchMatrix,
+            //                            glm::radians(360.0f),
+            //                            glm::vec3(0, 1, 0));
+
+            // Scale as usual
+            branchMatrix = glm::scale(branchMatrix,
+                glm::vec3(java / 8, java / 2, java / 8));
+
+            // Draw it
+            RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+
+            // Recurse to next level
+            DrawTreeRecursive(level - 1, maxLevel, branchMatrix, java);
+        }
+
+        // === Branch 2 (like your "colt1") ===============================
+        {
+            float factor = 0.0f;
+            glm::mat4 branchMatrix = parentMatrix;
+
+            branchMatrix = glm::translate(
+                branchMatrix,
+                glm::vec3(
+                    (-3 * java / 4.0f) * factor,
+                    (5 * java - java / 2.0f) * factor,
+                    (2 * java / 3.0f) * factor
+                ));
+            branchMatrix = glm::rotate(branchMatrix,
+                glm::radians(45.0f),
+                glm::vec3(1, 0, 1));
+            branchMatrix = glm::rotate(branchMatrix,
+                glm::radians(240.0f),
+                glm::vec3(0, 1, 0));
+
+            branchMatrix = glm::scale(branchMatrix,
+                glm::vec3(java / 8, java / 2, java / 8));
+
+            RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+
+            // Recurse
+            DrawTreeRecursive(level - 1, maxLevel, branchMatrix, java);
+        }
+
+        // === Branch 3 (like your "latura") ===============================
+        {
+            float factor = 0.0f;
+            glm::mat4 branchMatrix = parentMatrix;
+
+            branchMatrix = glm::translate(
+                branchMatrix,
+                glm::vec3(
+                    0.0f,
+                    (5 * java - java / 2.0f) * factor,
+                    -java * factor  // expanded outward
+                ));
+            branchMatrix = glm::rotate(branchMatrix,
+                glm::radians(-45.0f),
+                glm::vec3(1, 0, 0));
+            branchMatrix = glm::rotate(branchMatrix,
+                glm::radians(120.0f),
+                glm::vec3(0, 1, 0));
+
+            branchMatrix = glm::scale(branchMatrix,
+                glm::vec3(java / 8, java / 2, java / 8));
+
+            RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+
+            // Recurse
+            DrawTreeRecursive(level - 1, maxLevel, branchMatrix, java);
+        }
+
+        // If you want more branches, add them here similarly ...
+    }
+}
+
+
 
 
 Texture2D* Tema::LoadTexture(const char* imagePath)
