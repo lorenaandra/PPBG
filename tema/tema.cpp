@@ -28,24 +28,6 @@ Tema::~Tema()
 void Tema::Init()
 {
 
-    auto camera = GetSceneCamera();
-    camera->SetPosition(glm::vec3(0, 10, 10));
-
-    //// Relative position of the camera from the helicopter
-    //glm::vec3 relativeCameraPosition = glm::vec3(0.0f, 12.0f, 3.0f);
-
-    //// Rotate the relative position based on the helicopter's rotation (if needed)
-    //glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotation_oy, glm::vec3(0.0f, 1.0f, 0.0f));
-    //glm::vec3 rotatedCameraPosition = glm::vec3(rotationMatrix * glm::vec4(relativeCameraPosition, 1.0f));
-
-    //// Set the camera's position relative to the helicopter
-    //glm::vec3 cameraPosition = helicopterPosition + rotatedCameraPosition;
-    //camera->SetPosition(cameraPosition);
-
-    //// Make the camera look at the helicopter
-    //camera->SetRotation(glm::quatLookAt(glm::normalize(helicopterPosition - cameraPosition), glm::vec3(0.0f, 1.0f, 0.0f)));
-
-
     ///// Load textures
     {
         Texture2D* texture = LoadTexture("src\\lab\\tema\\images\\noise.png");
@@ -61,6 +43,7 @@ void Tema::Init()
         Texture2D* texture = LoadTexture("src\\lab\\tema\\images\\snow.jpg");
         mapTextures["snow"] = texture;
     }
+
 
 
     ///// Load shaders
@@ -82,17 +65,22 @@ void Tema::Init()
     }
 
     {
-        Mesh* mesh = CreateCustomCube("green_cube", 4, glm::vec3(0, 1, 0));
+        Mesh* mesh = CreateCustomCube("green_cube", 4, glm::vec3(0, 1, 0), false);
         meshes[mesh->GetMeshID()] = mesh;
     }
 
     {
-        Mesh* mesh = CreateCustomCube("maroon_cube", 4, glm::vec3(0.6627f, 0.4784f, 0.3412f));
+        Mesh* mesh = CreateCustomCube("maroon_cube", 4, glm::vec3(0.6627f, 0.4784f, 0.3412f), false);
         meshes[mesh->GetMeshID()] = mesh;
     }
 
     {
-        Mesh* mesh = CreateCustomCube("tree_part", 4, glm::vec3(1, 1, 1));
+        Mesh* mesh = CreateCustomCube("tree_part", 4, glm::vec3(1, 1, 1), true);
+        meshes[mesh->GetMeshID()] = mesh;
+    }
+
+    {
+        Mesh* mesh = CreateCustomCube("mark", 2, glm::vec3(1.0f, 0.584f, 0.851f), false);
         meshes[mesh->GetMeshID()] = mesh;
     }
 
@@ -101,7 +89,7 @@ void Tema::Init()
     rotation_angle1 = 0.0f;
     rotation_angle2 = 0.0f;
 
-    helicopterPosition = glm::vec3(0.0f, 10.0f, 0.0f);
+    //helicopterPosition = glm::vec3(0.0f, 10.0f, 0.0f);
     rotation_oy = 0.0f;
     rotation_ox = 0.0f;
     speed = 5.0f;
@@ -124,13 +112,43 @@ void Tema::FrameStart()
 
 void Tema::Update(float deltaTimeSeconds)
 {
+    stopwatch += deltaTimeSeconds;
+    mark_offset = 1.0f + sin(stopwatch) * 0.5f;
+
+
+    //auto camera = GetSceneCamera();
+    //camera->SetPosition(glm::vec3(-2, 2, 0));
+
+    glm::mat4 rotationMatrix_oY = glm::rotate(glm::mat4(1.0f), rotation_oy, glm::vec3(0, 1, 0));
+    glm::mat4 rotationMatrixX = glm::rotate(glm::mat4(1.0f), rotation_ox, glm::vec3(1, 0, 0));
+    glm::mat4 combinedRotationMatrix = rotationMatrix_oY * rotationMatrixX;
+
+
+    glm::vec3 forward_helicopter = glm::vec3(combinedRotationMatrix * glm::vec4(0, 0, -1, 0));
+    glm::vec3 helicopterRight = glm::vec3(combinedRotationMatrix * glm::vec4(1, 0, 0, 0));
+
+    // Define the relative camera position and rotate it
+    glm::vec3 relativeCameraPosition = glm::vec3(-2, 3, 0);
+    glm::vec3 rotatedCameraPosition = glm::vec3(combinedRotationMatrix * glm::vec4(relativeCameraPosition, 1.0f));
+    glm::vec3 cameraPosition = helicopterPosition + rotatedCameraPosition;
+
+    // Calculate the camera direction and update the scene camera
+    glm::vec3 direction = glm::normalize(helicopterPosition - cameraPosition);
+    auto camera = GetSceneCamera();
+    camera->SetPositionAndRotation(
+        cameraPosition,
+        glm::quatLookAt(direction, glm::vec3(0, 1, 0))
+    );
+
+
+
     //// planul simplu din triunghiuri (panza)
     //{
     //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     //    glm::mat4 modelMatrix = glm::mat4(1);
-    //    modelMatrix = glm::translate(modelMatrix, glm::vec3(10, 0, 0));
-    //    //modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-    //    modelMatrix = glm::scale(modelMatrix, glm::vec3(0.3f));
+    //    modelMatrix = glm::translate(modelMatrix, glm::vec3(0, 10, 0));
+    //    modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    //    //modelMatrix = glm::scale(modelMatrix, glm::vec3(0.3f));
     //    RenderMesh(meshes["wireframe"], shaders["SimpleShader"], modelMatrix);
     //}
 
@@ -152,181 +170,41 @@ void Tema::Update(float deltaTimeSeconds)
     //}
 
     //// asteroid
-    //{
-    //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    //    glm::mat4 modelMatrix = glm::mat4(1);
-    //    modelMatrix = glm::translate(modelMatrix, glm::vec3(0, 0, 0));
-    //    modelMatrix = glm::scale(modelMatrix, glm::vec3(2.0f));
-    //    RenderComplexMesh(meshes["wireframe"], shaders["Curvature"], modelMatrix, mapTextures["ground"], mapTextures["snow"], mapTextures["noise"]);
-    //}
-
-
-
-
-    /* HELICOPTER */
-    /*
-    glm::mat4 helicopterMatrix = glm::mat4(1.0f);
-    helicopterMatrix = glm::translate(helicopterMatrix, helicopterPosition);
-    helicopterMatrix = glm::rotate(helicopterMatrix, rotation_oy, glm::vec3(0, 1, 0));
-    helicopterMatrix = glm::rotate(helicopterMatrix, rotation_ox, glm::vec3(0, 0, 1));
-   // helicopterMatrix = glm::translate(helicopterMatrix, glm::vec3(0.0f, 10.0f, 0.0f));
-    helicopterMatrix = glm::scale(helicopterMatrix, glm::vec3(0.5f));
-
-    //// coada elicopter
     {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glm::mat4 modelMatrix = helicopterMatrix;
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(-0.5f, 0.25f, 0.25f));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(0.25f));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(1.0f, 0.15f, 0.15f));
-        //modelMatrix = glm::translate(modelMatrix, glm::vec3(-1, 0, 0));
-        RenderMesh(meshes["green_cube"], shaders["SimpleShader"], modelMatrix);
-    }
-
-    // corp elicopter
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glm::mat4 modelMatrix = helicopterMatrix;
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(1.0f, 0.5f, 0.5f));
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(0.5f, 0.5f, 0.5f));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(0.25f));
-        RenderMesh(meshes["green_cube"], shaders["SimpleShader"], modelMatrix);
-    }
-
-    rotation_angle1 += deltaTimeSeconds * 360.0f;
-    if (rotation_angle1 >= 360.0f) rotation_angle1 -= 360.0f;
-    // elice 1
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glm::mat4 modelMatrix = helicopterMatrix;
-
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(0.5f, 0.525f, 0.25f));
-        modelMatrix = glm::rotate(modelMatrix, glm::radians(-rotation_angle1), glm::vec3(0, 1, 0));
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(-0.5f, -0.525f, -0.25f));
-
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(0, 0.1f, 0));
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(0.5f, 0.525f, 0.25f));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(2.0f, 0.05f, 0.1f));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(0.25f));
-        RenderMesh(meshes["maroon_cube"], shaders["SimpleShader"], modelMatrix);
-    }
-
-    rotation_angle2 += deltaTimeSeconds * 360.0f;
-    if (rotation_angle2 >= 360.0f) rotation_angle2 -= 360.0f;
-
-    //// elice 2
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glm::mat4 modelMatrix = helicopterMatrix;
-
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(0.5f, 0.525f, 0.25f));
-        modelMatrix = glm::rotate(modelMatrix, glm::radians(-rotation_angle2), glm::vec3(0, 1, 0));
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(-0.5f, -0.525f, -0.25f));
-
-
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(0, 0.1f, 0));
-        modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0, 1, 0));
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(-0.25f, 0.525f, 0.5f));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(2.0f, 0.05f, 0.1f));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(0.25f));
-        RenderMesh(meshes["maroon_cube"], shaders["SimpleShader"], modelMatrix);
-    }
-
-    // elice coada 1
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glm::mat4 modelMatrix = helicopterMatrix;
-
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(-1, 0.3125f, 0.25f));
-        modelMatrix = glm::rotate(modelMatrix, glm::radians(-rotation_angle1), glm::vec3(0, 0, 1));
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(1, -0.3125f, -0.25f));
-
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(0.25f, 0.0625f, 0));
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(-1.25f, 0.25f, 0.25f));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(0.5f, 0.1f, 0.05f));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(0.25f));
-        RenderMesh(meshes["maroon_cube"], shaders["SimpleShader"], modelMatrix);
+        glm::mat4 modelMatrix = glm::mat4(1);
+        modelMatrix = glm::translate(modelMatrix, glm::vec3(0, 0, 0));
+        modelMatrix = glm::scale(modelMatrix, glm::vec3(2.0f));
+        RenderComplexMesh(meshes["wireframe"], shaders["Curvature"], modelMatrix, mapTextures["ground"], mapTextures["snow"], mapTextures["noise"]);
     }
 
 
-    // elice coada 1
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glm::mat4 modelMatrix = helicopterMatrix;
-
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(-1, 0.3125f, 0.25f));
-        modelMatrix = glm::rotate(modelMatrix, glm::radians(-rotation_angle2), glm::vec3(0, 0, 1));
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(1, -0.3125f, -0.25f));
+    ///* HELICOPTER */
+    DrawHelicopter(helicopterPosition, deltaTimeSeconds);
 
 
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(0.25f, 0.0625f, 0));
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(-1.25f, 0.25f, 0.25f));
-        modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(0.5f, 0.1f, 0.05f));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(0.25f));
-        RenderMesh(meshes["maroon_cube"], shaders["SimpleShader"], modelMatrix);
-    }
-
-    */
-
-
-    /* TREE */
-/*
-    float java = 1.0f; // unitate
-
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glm::mat4 branchMatrix = glm::mat4(1.0f);
-
-        //branchul de pe colt2
-        branchMatrix = glm::translate(branchMatrix, glm::vec3( 3 * java / 4, 5 * java - java / 2, 2 * java / 3));
-        branchMatrix = glm::rotate(branchMatrix, glm::radians(30.0f), glm::vec3(1, 0, 0));
-        branchMatrix = glm::rotate(branchMatrix, glm::radians(-30.0f), glm::vec3(0, 0, 1));
-        branchMatrix = glm::rotate(branchMatrix, glm::radians(360.0f), glm::vec3(0, 1, 0));
-        branchMatrix = glm::scale(branchMatrix, glm::vec3(java / 8, java / 2, java / 8));
-        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
-    }
-
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glm::mat4 branchMatrix = glm::mat4(1.0f);
-        //branchul de pe colt1
-        branchMatrix = glm::translate(branchMatrix, glm::vec3(- 3 * java /4, 5 * java - java/2, 2* java / 3));
-        branchMatrix = glm::rotate(branchMatrix, glm::radians(45.0f), glm::vec3(1, 0, 1));
-        branchMatrix = glm::rotate(branchMatrix, glm::radians(240.0f), glm::vec3(0, 1, 0));
-        branchMatrix = glm::scale(branchMatrix, glm::vec3(java / 8, java/2, java / 8));
-        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
-    }
-
-    {
-        //branchul de pe latura
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glm::mat4 branchMatrix = glm::mat4(1.0f);
-        branchMatrix = glm::translate(branchMatrix, glm::vec3(0, 5 * java - java / 2, -java));
-        branchMatrix = glm::rotate(branchMatrix, glm::radians(-45.0f), glm::vec3(1, 0, 0));
-        branchMatrix = glm::rotate(branchMatrix, glm::radians(120.0f), glm::vec3(0, 1, 0));
-        branchMatrix = glm::scale(branchMatrix, glm::vec3(java / 8, java / 2, java / 8));
-        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
-    }
-
-    {
-        //trunchi
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glm::mat4 branchMatrix = glm::mat4(1.0f);
-        branchMatrix = glm::translate(branchMatrix, glm::vec3(0, 2 * java, 0));
-        branchMatrix = glm::scale(branchMatrix, glm::vec3(java / 4, java, java / 4));
-        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
-    }
-
-    */
-
+    /* FINAL TREE */
     {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glm::mat4 baseMatrix = glm::mat4(1);
-        int maxlevel = 10;
+        baseMatrix = glm::translate(baseMatrix, glm::vec3(10, 0, 10));
+        baseMatrix = glm::translate(baseMatrix, glm::vec3(0.0f, 0.5f, 0.0f));
+       // baseMatrix = glm::scale(baseMatrix, glm::vec3(0.125f));
+        int maxlevel = 6;
         float initialjava = 2.0f;
         DrawTreeRecursive(maxlevel, maxlevel, baseMatrix, initialjava);
     }
+
+
+    //{
+    //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    //    glm::mat4 modelMatrix = glm::mat4(1);
+
+    //    modelMatrix = glm::translate(modelMatrix, glm::vec3(0, mark_offset, 0));
+    //    
+    //    modelMatrix = glm::scale(modelMatrix, glm::vec3(0.125f / 2, 0.5f / 2, 0.125f / 2));
+    //    RenderMesh(meshes["mark"], shaders["SimpleShader"], modelMatrix);
+    //}
 
 }
 
@@ -401,7 +279,7 @@ Mesh* lab::Tema::CreateWireframePlane(const std::string& meshName, float planeSi
 }
 
 
-Mesh* Tema::CreateCustomCube(const std::string& meshName, float sideLength, const glm::vec3& color)
+Mesh* Tema::CreateCustomCube(const std::string& meshName, float sideLength, const glm::vec3& color, bool isMultiColored)
 {
     float helper = sideLength / 2.0f;
     glm::vec3 color_front = color;
@@ -411,12 +289,14 @@ Mesh* Tema::CreateCustomCube(const std::string& meshName, float sideLength, cons
     glm::vec3 color_top = color;
     glm::vec3 color_bottom = color;
 
-    color_front = glm::vec3(1.0f, 0.0f, 0.486f);
-    color_back = glm::vec3(0.373f, 1.0f, 0.0f);
-    color_left = glm::vec3(0.0f, 1.0f, 0.706f);
-    color_right = glm::vec3(1.0f, 0.5f, 0.0f);
-    color_top = glm::vec3(0.2f, 0.4f, 0.669f);
-    color_bottom = glm::vec3(0.0f, 0.769f, 1.0f);
+    if (isMultiColored) {
+        color_front = glm::vec3(1.0f, 0.0f, 0.486f);
+        color_back = glm::vec3(0.373f, 1.0f, 0.0f);
+        color_left = glm::vec3(0.0f, 1.0f, 0.706f);
+        color_right = glm::vec3(1.0f, 0.5f, 0.0f);
+        color_top = glm::vec3(0.2f, 0.4f, 0.669f);
+        color_bottom = glm::vec3(0.0f, 0.769f, 1.0f);
+    }
 
     std::vector<VertexFormat> vertices =
     {
@@ -479,6 +359,118 @@ Mesh* Tema::CreateCustomCube(const std::string& meshName, float sideLength, cons
 }
 
 
+void Tema::DrawHelicopter(glm::vec3 helicopterPosition, float deltaTimeSeconds)
+{
+
+    
+    glm::mat4 helicopterMatrix = glm::mat4(1.0f);
+    helicopterMatrix = glm::translate(helicopterMatrix, helicopterPosition);
+    helicopterMatrix = glm::rotate(helicopterMatrix, rotation_oy, glm::vec3(0, 1, 0));
+    helicopterMatrix = glm::rotate(helicopterMatrix, rotation_ox, glm::vec3(0, 0, 1));
+    // helicopterMatrix = glm::translate(helicopterMatrix, glm::vec3(0.0f, 10.0f, 0.0f));
+    helicopterMatrix = glm::scale(helicopterMatrix, glm::vec3(0.5f));
+
+
+
+     //// coada elicopter
+     {
+         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+         glm::mat4 modelMatrix = helicopterMatrix;
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(-0.5f, 0.25f, 0.25f));
+         modelMatrix = glm::scale(modelMatrix, glm::vec3(0.25f));
+         modelMatrix = glm::scale(modelMatrix, glm::vec3(1.0f, 0.15f, 0.15f));
+         //modelMatrix = glm::translate(modelMatrix, glm::vec3(-1, 0, 0));
+         RenderMesh(meshes["green_cube"], shaders["SimpleShader"], modelMatrix);
+     }
+
+     // corp elicopter
+     {
+         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+         glm::mat4 modelMatrix = helicopterMatrix;
+         modelMatrix = glm::scale(modelMatrix, glm::vec3(1.0f, 0.5f, 0.5f));
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(0.5f, 0.5f, 0.5f));
+         modelMatrix = glm::scale(modelMatrix, glm::vec3(0.25f));
+         RenderMesh(meshes["green_cube"], shaders["SimpleShader"], modelMatrix);
+     }
+
+     rotation_angle1 += deltaTimeSeconds * 360.0f;
+     if (rotation_angle1 >= 360.0f) rotation_angle1 -= 360.0f;
+     // elice 1
+     {
+         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+         glm::mat4 modelMatrix = helicopterMatrix;
+
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(0.5f, 0.525f, 0.25f));
+         modelMatrix = glm::rotate(modelMatrix, glm::radians(-rotation_angle1), glm::vec3(0, 1, 0));
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(-0.5f, -0.525f, -0.25f));
+
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(0, 0.1f, 0));
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(0.5f, 0.525f, 0.25f));
+         modelMatrix = glm::scale(modelMatrix, glm::vec3(2.0f, 0.05f, 0.1f));
+         modelMatrix = glm::scale(modelMatrix, glm::vec3(0.25f));
+         RenderMesh(meshes["maroon_cube"], shaders["SimpleShader"], modelMatrix);
+     }
+
+     rotation_angle2 += deltaTimeSeconds * 360.0f;
+     if (rotation_angle2 >= 360.0f) rotation_angle2 -= 360.0f;
+
+     //// elice 2
+     {
+         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+         glm::mat4 modelMatrix = helicopterMatrix;
+
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(0.5f, 0.525f, 0.25f));
+         modelMatrix = glm::rotate(modelMatrix, glm::radians(-rotation_angle2), glm::vec3(0, 1, 0));
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(-0.5f, -0.525f, -0.25f));
+
+
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(0, 0.1f, 0));
+         modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0, 1, 0));
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(-0.25f, 0.525f, 0.5f));
+         modelMatrix = glm::scale(modelMatrix, glm::vec3(2.0f, 0.05f, 0.1f));
+         modelMatrix = glm::scale(modelMatrix, glm::vec3(0.25f));
+         RenderMesh(meshes["maroon_cube"], shaders["SimpleShader"], modelMatrix);
+     }
+
+     // elice coada 1
+     {
+         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+         glm::mat4 modelMatrix = helicopterMatrix;
+
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(-1, 0.3125f, 0.25f));
+         modelMatrix = glm::rotate(modelMatrix, glm::radians(-rotation_angle1), glm::vec3(0, 0, 1));
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(1, -0.3125f, -0.25f));
+
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(0.25f, 0.0625f, 0));
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(-1.25f, 0.25f, 0.25f));
+         modelMatrix = glm::scale(modelMatrix, glm::vec3(0.5f, 0.1f, 0.05f));
+         modelMatrix = glm::scale(modelMatrix, glm::vec3(0.25f));
+         RenderMesh(meshes["maroon_cube"], shaders["SimpleShader"], modelMatrix);
+     }
+
+
+     // elice coada 1
+     {
+         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+         glm::mat4 modelMatrix = helicopterMatrix;
+
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(-1, 0.3125f, 0.25f));
+         modelMatrix = glm::rotate(modelMatrix, glm::radians(-rotation_angle2), glm::vec3(0, 0, 1));
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(1, -0.3125f, -0.25f));
+
+
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(0.25f, 0.0625f, 0));
+         modelMatrix = glm::translate(modelMatrix, glm::vec3(-1.25f, 0.25f, 0.25f));
+         modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
+         modelMatrix = glm::scale(modelMatrix, glm::vec3(0.5f, 0.1f, 0.05f));
+         modelMatrix = glm::scale(modelMatrix, glm::vec3(0.25f));
+         RenderMesh(meshes["maroon_cube"], shaders["SimpleShader"], modelMatrix);
+     }
+
+ 
+}
+
+
 void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMatrix, float scale)
 {
 
@@ -526,6 +518,57 @@ void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMat
 }
 
 
+void Tema::DrawTreeManually()
+{
+
+    float java = 1.0f; // unitate
+
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glm::mat4 branchMatrix = glm::mat4(1.0f);
+
+        //branchul de pe colt2
+        branchMatrix = glm::translate(branchMatrix, glm::vec3(3 * java / 4, 5 * java - java / 2, 2 * java / 3));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(30.0f), glm::vec3(1, 0, 0));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(-30.0f), glm::vec3(0, 0, 1));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(360.0f), glm::vec3(0, 1, 0));
+        branchMatrix = glm::scale(branchMatrix, glm::vec3(java / 8, java / 2, java / 8));
+        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+    }
+
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glm::mat4 branchMatrix = glm::mat4(1.0f);
+        //branchul de pe colt1
+        branchMatrix = glm::translate(branchMatrix, glm::vec3(-3 * java / 4, 5 * java - java / 2, 2 * java / 3));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(45.0f), glm::vec3(1, 0, 1));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(240.0f), glm::vec3(0, 1, 0));
+        branchMatrix = glm::scale(branchMatrix, glm::vec3(java / 8, java / 2, java / 8));
+        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+    }
+
+    {
+        //branchul de pe latura
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glm::mat4 branchMatrix = glm::mat4(1.0f);
+        branchMatrix = glm::translate(branchMatrix, glm::vec3(0, 5 * java - java / 2, -java));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(-45.0f), glm::vec3(1, 0, 0));
+        branchMatrix = glm::rotate(branchMatrix, glm::radians(120.0f), glm::vec3(0, 1, 0));
+        branchMatrix = glm::scale(branchMatrix, glm::vec3(java / 8, java / 2, java / 8));
+        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+    }
+
+    {
+        //trunchi
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glm::mat4 branchMatrix = glm::mat4(1.0f);
+        branchMatrix = glm::translate(branchMatrix, glm::vec3(0, 2 * java, 0));
+        branchMatrix = glm::scale(branchMatrix, glm::vec3(java / 4, java, java / 4));
+        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+    }
+
+
+}
 
 
 Texture2D* Tema::LoadTexture(const char* imagePath)
@@ -696,7 +739,8 @@ void Tema::RenderComplexMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
 
 
     GLint deformFactor = glGetUniformLocation(shader->program, "deform_factor");
-    glUniform1f(deformFactor, 5.5f);
+    //glUniform1f(deformFactor, 5.5f);
+    glUniform1f(deformFactor, 3.5f);
 
     // curvature_factor
     GLint locCurv = glGetUniformLocation(shader->program, "curvature_factor");
@@ -705,7 +749,8 @@ void Tema::RenderComplexMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
 
     // helicopter_position
     GLint locHeli = glGetUniformLocation(shader->program, "helicopter_position");
-    glUniform3f(locHeli, 0.0f, 0.0f, 0.0f);
+    //glUniform3f(locHeli, 0.0f, 0.0f, 0.0f);
+    glUniform3f(locHeli, helicopterPosition.x, helicopterPosition.y, helicopterPosition.z);
 
     // Draw the mesh
     glBindVertexArray(mesh->GetBuffers()->m_VAO);
@@ -739,18 +784,31 @@ void Tema::OnInputUpdate(float deltaTime, int mods)
 {
     if (!window->MouseHold(GLFW_MOUSE_BUTTON_RIGHT))
     {
+        // matrice de rotatie ca sa controlam miscarile elicopterului in jurul axelor elicopterului,
+        // nu cele globale
+        glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotation_oy, glm::vec3(0, 1, 0));
+        
+        glm::vec3 local_forward = glm::vec3(0, 0, -1);  
+        glm::vec3 local_right = glm::vec3(1, 0, 0);     
+
+        //glm::vec3 rotatedRight = glm::vec3(rotationMatrix * glm::vec4(forward, 1.0f));
+        //glm::vec3 rotatedForward = glm::vec3(rotationMatrix * glm::vec4(right, 1.0f));
+
+        glm::vec3 world_forward = glm::vec3(rotationMatrix * glm::vec4(local_forward, 1.0f));
+        glm::vec3 world_right = glm::vec3(rotationMatrix * glm::vec4(local_right, 1.0f));
+
 
         if (window->KeyHold(GLFW_KEY_W)) {
-            helicopterPosition.z -= speed * deltaTime;  // move forward in negative Z
+            helicopterPosition += world_right * speed * deltaTime;
         }
         if (window->KeyHold(GLFW_KEY_S)) {
-            helicopterPosition.z += speed * deltaTime;  // move backward
+            helicopterPosition -= world_right * speed * deltaTime;
         }
         if (window->KeyHold(GLFW_KEY_A)) {
-            helicopterPosition.x -= speed * deltaTime;  // move left
+            helicopterPosition += world_forward * speed * deltaTime;
         }
         if (window->KeyHold(GLFW_KEY_D)) {
-            helicopterPosition.x += speed * deltaTime;  // move right
+            helicopterPosition -= world_forward * speed * deltaTime;
         }
 
         if (window->KeyHold(GLFW_KEY_Q)) {
@@ -760,23 +818,22 @@ void Tema::OnInputUpdate(float deltaTime, int mods)
             helicopterPosition.y += speed * deltaTime;
         }
 
+
         if (window->KeyHold(GLFW_KEY_LEFT)) {
             rotation_oy += 1.5f * deltaTime;
         }
         if (window->KeyHold(GLFW_KEY_RIGHT)) {
-            rotation_oy -= 1.5f * deltaTime;
+            rotation_oy -= 1.5f * deltaTime; 
         }
 
         if (window->KeyHold(GLFW_KEY_UP)) {
-            rotation_ox += 1.5f * deltaTime;
-        }
-        if (window->KeyHold(GLFW_KEY_DOWN)) {
             rotation_ox -= 1.5f * deltaTime;
         }
-
+        if (window->KeyHold(GLFW_KEY_DOWN)) {
+            rotation_ox += 1.5f * deltaTime; 
+        }
     }
 }
-
 
 //void Tema::UpdateCamera()
 //{

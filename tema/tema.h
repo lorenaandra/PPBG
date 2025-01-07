@@ -39,17 +39,21 @@ namespace lab
         Texture2D* LoadTexture(const char* imagePath);
         Mesh* CreateWireframePlane(const std::string& meshName, float planeSize, int divisions);
         void RenderComplexMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, Texture2D* groundTexture, Texture2D* snowTexture, Texture2D* noiseTexture);
-        Mesh* CreateCustomCube(const std::string& meshName, float sideLength, const glm::vec3& color);
+        Mesh* CreateCustomCube(const std::string& meshName, float sideLength, const glm::vec3& color, bool isMultiColored);
+        void Tema::DrawTreeManually();
         void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMatrix, float scale);
+        void Tema::DrawHelicopter(glm::vec3 helicopterPosition, float deltaTimeSeconds);
 
 
         std::unordered_map<std::string, Texture2D*> mapTextures;
         float rotation_angle1;
         float rotation_angle2;
-        glm::vec3 helicopterPosition;
+        glm::vec3 helicopterPosition = glm::vec3(0.0f, 8.0f, 0.0f);
         float speed;
         float rotation_oy;
         float rotation_ox;
+        float stopwatch;
+        float mark_offset = 0;
 
     };
 }   // namespace lab
