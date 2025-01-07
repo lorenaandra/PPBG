@@ -40,7 +40,7 @@ namespace lab
         Mesh* CreateWireframePlane(const std::string& meshName, float planeSize, int divisions);
         void RenderComplexMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, Texture2D* groundTexture, Texture2D* snowTexture, Texture2D* noiseTexture);
         Mesh* CreateCustomCube(const std::string& meshName, float sideLength, const glm::vec3& color);
-        void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMatrix, float java);
+        void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMatrix, float scale);
 
 
         std::unordered_map<std::string, Texture2D*> mapTextures;

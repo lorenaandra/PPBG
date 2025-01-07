@@ -323,8 +323,8 @@ void Tema::Update(float deltaTimeSeconds)
     {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glm::mat4 baseMatrix = glm::mat4(1);
-        int maxlevel = 2;
-        float initialjava = 1.0f;
+        int maxlevel = 10;
+        float initialjava = 2.0f;
         DrawTreeRecursive(maxlevel, maxlevel, baseMatrix, initialjava);
     }
 
@@ -479,157 +479,50 @@ Mesh* Tema::CreateCustomCube(const std::string& meshName, float sideLength, cons
 }
 
 
-
-void Tema::DrawTreeRecursive(int level,
-    int maxLevel,
-    const glm::mat4& parentMatrix,
-    float java)
+void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMatrix, float scale)
 {
-    // 1) Draw the trunk ONLY if we are at the top level
-    //    so it’s drawn exactly once.
-    if (level == maxLevel)
+
+    if (level == 0)
+        return;
+
+    glm::mat4 branchMatrix = parentMatrix;
+    branchMatrix = glm::scale(branchMatrix, glm::vec3(scale / 4.0f, scale, scale / 4.0f));
+    RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+
+    // translate for child branches
+    glm::mat4 baseTransform = glm::translate(parentMatrix, glm::vec3(0, 2.5 * scale, 0));
+
+    //if (index == 0) {
+    //    cout << "The integer is: " << index << endl;
+    //    baseTransform = glm::translate(parentMatrix, glm::vec3(-scale / 2, 0, scale));
+    //}
+
+
+    for (int i = 0; i < 3; i++)
     {
-        glm::mat4 trunkMatrix = parentMatrix;
+        //if (i == 0)
+        //{
+            glm::mat4 childMatrix = baseTransform;
+            if (i == 0)
+                childMatrix = glm::translate(childMatrix, glm::vec3(-scale, 0, scale/2));
+            if (i == 1)
+                childMatrix = glm::translate(childMatrix, glm::vec3(scale, 0, scale/2));
+            if (i == 2)
+                childMatrix = glm::translate(childMatrix, glm::vec3(0, 0, -scale));
 
-        // Your trunk logic (unchanged from snippet)
-        trunkMatrix = glm::translate(trunkMatrix, glm::vec3(0, 2 * java, 0));
-        trunkMatrix = glm::scale(trunkMatrix, glm::vec3(java / 4, java, java / 4));
+            float rotationY = glm::radians(120.0f * i);
+            childMatrix = glm::rotate(childMatrix, rotationY, glm::vec3(0.0f, 1.0f, 0.0f));
 
-        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], trunkMatrix);
+            float tiltX = glm::radians(30.0f);
+            float tiltZ = glm::radians(45.0f);
+            childMatrix = glm::rotate(childMatrix, tiltX, glm::vec3(1.0f, 0.0f, 0.0f));
+            childMatrix = glm::rotate(childMatrix, tiltZ, glm::vec3(0.0f, 0.0f, 1.0f));
+
+
+            DrawTreeRecursive(level - 1, maxLevel, childMatrix, scale * 0.5);
+        //}
     }
 
-    // 2) If there are still levels left, spawn branches
-    if (level > 0)
-    {
-        // We'll expand translations by a factor that grows each level downward
-        // so branches move farther away from the trunk each recursion.
-        // For example, factor = (maxLevel - level + 1).
-        float java = 1.0f;
-        float l0 = 4 * java;
-        float c = - java / 2;
-        float factor_y = 0.0f;
-
-        float factor_x = 3 * java / 4.0f;
-        float factor_z = 2 * java / 3.0f;
-
-        int i = 0;
-
-        for (i = 0; i <= level; i++) {
-            if (i == level) {
-                factor_y = factor_y + 4 * java / float(std::pow(2, (i + 1)));
-            }
-            else {
-                factor_y = factor_y + 4 * java / float(std::pow(2, i));
-
-                if (i > 0) {
-                    factor_x = factor_x + factor_x / 2;
-                    factor_z = factor_z + factor_z / 2;
-                }
-            }
-
-            
-
-        }
-        factor_y = factor_y + c / float(std::pow(2, (level - 1)));
-        std::cout << "The value of myFloat is: " << factor_y << std::endl;
-        
-        
-
-        
-
-        // === Branch 1 (like your "colt2") ===============================
-        {
-            glm::mat4 branchMatrix = parentMatrix;
-
-            // Expand the translation coordinates by 'factor'
-            branchMatrix = glm::translate(
-                branchMatrix,
-                glm::vec3(
-                    factor_x,
-                    factor_y,
-                    factor_z
-                ));
-            // Angles stay the same as your snippet
-            branchMatrix = glm::rotate(branchMatrix,
-                glm::radians(30.0f),
-                glm::vec3(1, 0, 0));
-            branchMatrix = glm::rotate(branchMatrix,
-                glm::radians(-30.0f),
-                glm::vec3(0, 0, 1));
-            // If you had a Y rotation, keep it:
-            // branchMatrix = glm::rotate(branchMatrix,
-            //                            glm::radians(360.0f),
-            //                            glm::vec3(0, 1, 0));
-
-            // Scale as usual
-            branchMatrix = glm::scale(branchMatrix,
-                glm::vec3(java / 8, java / 2, java / 8));
-
-            // Draw it
-            RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
-
-            // Recurse to next level
-            DrawTreeRecursive(level - 1, maxLevel, branchMatrix, java);
-        }
-
-        // === Branch 2 (like your "colt1") ===============================
-        {
-            float factor = 0.0f;
-            glm::mat4 branchMatrix = parentMatrix;
-
-            branchMatrix = glm::translate(
-                branchMatrix,
-                glm::vec3(
-                    (-3 * java / 4.0f) * factor,
-                    (5 * java - java / 2.0f) * factor,
-                    (2 * java / 3.0f) * factor
-                ));
-            branchMatrix = glm::rotate(branchMatrix,
-                glm::radians(45.0f),
-                glm::vec3(1, 0, 1));
-            branchMatrix = glm::rotate(branchMatrix,
-                glm::radians(240.0f),
-                glm::vec3(0, 1, 0));
-
-            branchMatrix = glm::scale(branchMatrix,
-                glm::vec3(java / 8, java / 2, java / 8));
-
-            RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
-
-            // Recurse
-            DrawTreeRecursive(level - 1, maxLevel, branchMatrix, java);
-        }
-
-        // === Branch 3 (like your "latura") ===============================
-        {
-            float factor = 0.0f;
-            glm::mat4 branchMatrix = parentMatrix;
-
-            branchMatrix = glm::translate(
-                branchMatrix,
-                glm::vec3(
-                    0.0f,
-                    (5 * java - java / 2.0f) * factor,
-                    -java * factor  // expanded outward
-                ));
-            branchMatrix = glm::rotate(branchMatrix,
-                glm::radians(-45.0f),
-                glm::vec3(1, 0, 0));
-            branchMatrix = glm::rotate(branchMatrix,
-                glm::radians(120.0f),
-                glm::vec3(0, 1, 0));
-
-            branchMatrix = glm::scale(branchMatrix,
-                glm::vec3(java / 8, java / 2, java / 8));
-
-            RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
-
-            // Recurse
-            DrawTreeRecursive(level - 1, maxLevel, branchMatrix, java);
-        }
-
-        // If you want more branches, add them here similarly ...
-    }
 }
 
 
