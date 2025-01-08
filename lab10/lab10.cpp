@@ -234,13 +234,12 @@ void Lab10::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
         GLint locGrav = glGetUniformLocation(shader->program, "gravity");
         glUniform1f(locGrav, -9.8f);
 
-        GLint locSpeed = glGetUniformLocation(shader->program, "initialSpeed");
+        GLint locSpeed = glGetUniformLocation(shader->program, "speed");
         glUniform1f(locSpeed, 3.0f);
 
-        // The center in world space
-        glm::vec4 centerOfModel = glm::vec4(-2, 0, 2, 1);
-        GLint locCenter = glGetUniformLocation(shader->program, "modelCenter");
-        glUniform4fv(locCenter, 1, glm::value_ptr(centerOfModel));
+        glm::vec4 originalCenter = glm::vec4(-2, 0, 2, 1);
+        GLint locCenter = glGetUniformLocation(shader->program, "originalCenter");
+        glUniform4fv(locCenter, 1, glm::value_ptr(originalCenter));
     }
 
 

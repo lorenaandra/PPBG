@@ -17,6 +17,7 @@ using namespace lab;
 
 Tema::Tema()
 {
+
 }
 
 
@@ -116,29 +117,42 @@ void Tema::Update(float deltaTimeSeconds)
     mark_offset = 1.0f + sin(stopwatch) * 0.5f;
 
 
-    //auto camera = GetSceneCamera();
-    //camera->SetPosition(glm::vec3(-2, 2, 0));
-
-    glm::mat4 rotationMatrix_oY = glm::rotate(glm::mat4(1.0f), rotation_oy, glm::vec3(0, 1, 0));
-    glm::mat4 rotationMatrixX = glm::rotate(glm::mat4(1.0f), rotation_ox, glm::vec3(1, 0, 0));
-    glm::mat4 combinedRotationMatrix = rotationMatrix_oY * rotationMatrixX;
+    /* CAMERA MODES */
+    glm::vec3 direction;
+    glm::vec3 cameraPosition;
 
 
-    glm::vec3 forward_helicopter = glm::vec3(combinedRotationMatrix * glm::vec4(0, 0, -1, 0));
-    glm::vec3 helicopterRight = glm::vec3(combinedRotationMatrix * glm::vec4(1, 0, 0, 0));
+    if (cameraMode == FOLLOW_ROTATION) {
 
-    // Define the relative camera position and rotate it
-    glm::vec3 relativeCameraPosition = glm::vec3(-2, 3, 0);
-    glm::vec3 rotatedCameraPosition = glm::vec3(combinedRotationMatrix * glm::vec4(relativeCameraPosition, 1.0f));
-    glm::vec3 cameraPosition = helicopterPosition + rotatedCameraPosition;
+        glm::mat4 rotationMatrix_oY = glm::rotate(glm::mat4(1.0f), rotation_oy, glm::vec3(0, 1, 0));
+        glm::mat4 rotationMatrix_ox = glm::rotate(glm::mat4(1.0f), rotation_ox, glm::vec3(1, 0, 0));
+        glm::mat4 combinedRotationMatrix = rotationMatrix_oY * rotationMatrix_ox;
 
-    // Calculate the camera direction and update the scene camera
-    glm::vec3 direction = glm::normalize(helicopterPosition - cameraPosition);
-    auto camera = GetSceneCamera();
-    camera->SetPositionAndRotation(
-        cameraPosition,
-        glm::quatLookAt(direction, glm::vec3(0, 1, 0))
-    );
+
+        glm::vec3 forward_helicopter = glm::vec3(combinedRotationMatrix * glm::vec4(0, 0, -1, 0));
+        glm::vec3 helicopterRight = glm::vec3(combinedRotationMatrix * glm::vec4(1, 0, 0, 0));
+
+        glm::vec3 relativeCameraPosition = glm::vec3(-2, 3, 0);
+        glm::vec3 rotatedCameraPosition = glm::vec3(combinedRotationMatrix * glm::vec4(relativeCameraPosition, 1.0f));
+        glm::vec3 cameraPosition = helicopterPosition + rotatedCameraPosition;
+
+        direction = glm::normalize(helicopterPosition - cameraPosition);
+        auto camera = GetSceneCamera();
+        camera->SetPositionAndRotation(cameraPosition, glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
+
+      //  std::cout 
+    }
+    else if (cameraMode == FOLLOW_FIXED) {
+        glm::vec3 camera_offset = glm::vec3(0, 3, -3);
+        cameraPosition = helicopterPosition + camera_offset;
+        direction = glm::normalize(helicopterPosition - cameraPosition);
+
+        auto camera = GetSceneCamera();
+        camera->SetPositionAndRotation(cameraPosition, glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
+
+    }
+
+
 
 
 
@@ -184,16 +198,16 @@ void Tema::Update(float deltaTimeSeconds)
 
 
     /* FINAL TREE */
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glm::mat4 baseMatrix = glm::mat4(1);
-        baseMatrix = glm::translate(baseMatrix, glm::vec3(10, 0, 10));
-        baseMatrix = glm::translate(baseMatrix, glm::vec3(0.0f, 0.5f, 0.0f));
-       // baseMatrix = glm::scale(baseMatrix, glm::vec3(0.125f));
-        int maxlevel = 6;
-        float initialjava = 2.0f;
-        DrawTreeRecursive(maxlevel, maxlevel, baseMatrix, initialjava);
-    }
+    //{
+    //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    //    glm::mat4 baseMatrix = glm::mat4(1);
+    //    baseMatrix = glm::translate(baseMatrix, glm::vec3(10, 0, 10));
+    //    baseMatrix = glm::translate(baseMatrix, glm::vec3(0.0f, 0.5f, 0.0f));
+    //   // baseMatrix = glm::scale(baseMatrix, glm::vec3(0.125f));
+    //    int maxlevel = 6;
+    //    float initialjava = 2.0f;
+    //    DrawTreeRecursive(maxlevel, maxlevel, baseMatrix, initialjava);
+    //}
 
 
     //{
@@ -361,10 +375,28 @@ Mesh* Tema::CreateCustomCube(const std::string& meshName, float sideLength, cons
 
 void Tema::DrawHelicopter(glm::vec3 helicopterPosition, float deltaTimeSeconds)
 {
+    // varianta din cerinta - e instabila pentru modul de joc 1 
+    // cand misc elicopterul dupa ce l am rotit
+    // din cauza ca el inregistreaza miscare dar unghiul e aproape zero
+    // si atan2 oscileaza mult
+    //static glm::vec3 previous_position = helicopterPosition;
 
-    
+    //glm::vec3 movement_direction = helicopterPosition - previous_position;
+
+    //if (glm::length(movement_direction) > 0.01f)
+    //{
+    //    movement_direction = glm::normalize(movement_direction);
+    //    float angle = atan2(movement_direction.x, -movement_direction.z);
+
+    //    rotation_oy = angle;
+    //}
+
+    //previous_position = helicopterPosition;
+
+
     glm::mat4 helicopterMatrix = glm::mat4(1.0f);
     helicopterMatrix = glm::translate(helicopterMatrix, helicopterPosition);
+    //float slow_incline_ox = rotation_ox * 0.5f;
     helicopterMatrix = glm::rotate(helicopterMatrix, rotation_oy, glm::vec3(0, 1, 0));
     helicopterMatrix = glm::rotate(helicopterMatrix, rotation_ox, glm::vec3(0, 0, 1));
     // helicopterMatrix = glm::translate(helicopterMatrix, glm::vec3(0.0f, 10.0f, 0.0f));
@@ -393,7 +425,7 @@ void Tema::DrawHelicopter(glm::vec3 helicopterPosition, float deltaTimeSeconds)
          RenderMesh(meshes["green_cube"], shaders["SimpleShader"], modelMatrix);
      }
 
-     rotation_angle1 += deltaTimeSeconds * 360.0f;
+     rotation_angle1 += deltaTimeSeconds * 360.0f * 1.5f;
      if (rotation_angle1 >= 360.0f) rotation_angle1 -= 360.0f;
      // elice 1
      {
@@ -411,7 +443,7 @@ void Tema::DrawHelicopter(glm::vec3 helicopterPosition, float deltaTimeSeconds)
          RenderMesh(meshes["maroon_cube"], shaders["SimpleShader"], modelMatrix);
      }
 
-     rotation_angle2 += deltaTimeSeconds * 360.0f;
+     rotation_angle2 += deltaTimeSeconds * 360.0f * 1.5f;
      if (rotation_angle2 >= 360.0f) rotation_angle2 -= 360.0f;
 
      //// elice 2
@@ -794,21 +826,21 @@ void Tema::OnInputUpdate(float deltaTime, int mods)
         //glm::vec3 rotatedRight = glm::vec3(rotationMatrix * glm::vec4(forward, 1.0f));
         //glm::vec3 rotatedForward = glm::vec3(rotationMatrix * glm::vec4(right, 1.0f));
 
-        glm::vec3 world_forward = glm::vec3(rotationMatrix * glm::vec4(local_forward, 1.0f));
-        glm::vec3 world_right = glm::vec3(rotationMatrix * glm::vec4(local_right, 1.0f));
+        glm::vec3 world_right = glm::vec3(rotationMatrix * glm::vec4(local_forward, 1.0f));
+        glm::vec3 world_forward = glm::vec3(rotationMatrix * glm::vec4(local_right, 1.0f));
 
 
         if (window->KeyHold(GLFW_KEY_W)) {
-            helicopterPosition += world_right * speed * deltaTime;
-        }
-        if (window->KeyHold(GLFW_KEY_S)) {
-            helicopterPosition -= world_right * speed * deltaTime;
-        }
-        if (window->KeyHold(GLFW_KEY_A)) {
             helicopterPosition += world_forward * speed * deltaTime;
         }
-        if (window->KeyHold(GLFW_KEY_D)) {
+        if (window->KeyHold(GLFW_KEY_S)) {
             helicopterPosition -= world_forward * speed * deltaTime;
+        }
+        if (window->KeyHold(GLFW_KEY_A)) {
+            helicopterPosition += world_right * speed * deltaTime;
+        }
+        if (window->KeyHold(GLFW_KEY_D)) {
+            helicopterPosition -= world_right * speed * deltaTime;
         }
 
         if (window->KeyHold(GLFW_KEY_Q)) {
@@ -858,6 +890,17 @@ void Tema::OnInputUpdate(float deltaTime, int mods)
 void Tema::OnKeyPress(int key, int mods)
 {
     // Add key press event
+    if (key == GLFW_KEY_P)
+    {
+        if (cameraMode == FOLLOW_ROTATION) {
+            cameraMode = FOLLOW_FIXED;
+            std::cout << "Camera mode: FOLLOW FIXED (OBSERVER VIEW)" << std::endl;
+        }
+        else {
+            cameraMode = FOLLOW_ROTATION;
+            std::cout << "Camera mode: FOLLOW ROTATION (HELICOPTER VIEW)" << std::endl;
+        }
+    }
 }
 
 

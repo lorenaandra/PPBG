@@ -25,7 +25,6 @@ void main()
         vec3 normDir = normalize(v_normal[i]);
         vec4 endPosEye = startPosEye + vec4(normDir * normalLength, 0.0);
 
-        // *** Emit the line from startPos -> endPos in eye space => then Project ***
 
         // 1) start
         gl_Position = Projection * startPosEye;
@@ -37,7 +36,6 @@ void main()
         out_color = vec3(0, 0, 1);
         EmitVertex();
 
-        // end the line segment
-        EndPrimitive();  // end this line segment
+        EndPrimitive();
     }
 }

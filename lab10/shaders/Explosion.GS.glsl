@@ -13,7 +13,7 @@ layout(location = 1) in vec2 v_texCoord[];
 uniform mat4 View;
 uniform mat4 Projection;
 uniform float time;             
-uniform float explosionFactor;  // how strong the explosion is
+uniform float explosionFactor; 
 
 // output la fragment shader
 layout(location = 0) out vec2 out_texCoord;

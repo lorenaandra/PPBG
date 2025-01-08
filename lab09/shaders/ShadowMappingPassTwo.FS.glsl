@@ -137,7 +137,7 @@ float VolumetricIllumination()
 
         vec3 sample_position = mix(eye_position, world_position, t);
 
-        if (IsIlluminated(sample_position, 0.005)) { 
+        if (IsIlluminated(sample_position, 0.0f)) { 
             illuminated_samples_count++;
 
         }
