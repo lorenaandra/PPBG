@@ -56,6 +56,8 @@ void Tema::Init()
     LoadShader("Relief");
     // shader pt creare forma asteroid
     LoadShader("Curvature");
+    // shader pt plasare copaci pe asteroid
+    LoadShader("TreePlacement");
 
 
 
@@ -86,6 +88,9 @@ void Tema::Init()
     }
 
 
+    // framebuffer
+    CreateSelectionFBO();
+
     ///// initializari
     rotation_angle1 = 0.0f;
     rotation_angle2 = 0.0f;
@@ -94,17 +99,36 @@ void Tema::Init()
     rotation_oy = 0.0f;
     rotation_ox = 0.0f;
     speed = 5.0f;
+
+
+    // coordonate pt copaci
+    for (int i = 0; i < 30; i++)
+    {
+        float randX = (rand() % 200 - 100) / 10.0f; 
+        float randZ = (rand() % 200 - 100) / 10.0f;
+
+        treePositions.push_back(glm::vec3(randX, 0.0f, randZ));
+    }
+
 }
 
 
 void Tema::FrameStart()
 {
-    // Clears the color buffer (using the previously set color) and depth buffer
+    //// Clears the color buffer (using the previously set color) and depth buffer
+    //glClearColor(0, 0, 0, 1);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //// default pentru modul de desenare -> de schimbat in FILL pentru formele de relief
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    //auto resolution = window->GetResolution();
+    //glViewport(0, 0, resolution.x, resolution.y);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, selectionFBO);
+
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // default pentru modul de desenare -> de schimbat in FILL pentru formele de relief
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     auto resolution = window->GetResolution();
     glViewport(0, 0, resolution.x, resolution.y);
@@ -153,10 +177,11 @@ void Tema::Update(float deltaTimeSeconds)
     }
 
 
+    /* //////FRAMEBUFFER */
+    ///
 
 
-
-    //// planul simplu din triunghiuri (panza)
+    /* planul simplu din triunghiuri(panza) */
     //{
     //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     //    glm::mat4 modelMatrix = glm::mat4(1);
@@ -166,7 +191,7 @@ void Tema::Update(float deltaTimeSeconds)
     //    RenderMesh(meshes["wireframe"], shaders["SimpleShader"], modelMatrix);
     //}
 
-    //// panza reliefata
+    /* panza reliefata */
     //{
     //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     //    glm::mat4 modelMatrix = glm::mat4(1);
@@ -175,7 +200,7 @@ void Tema::Update(float deltaTimeSeconds)
     //    RenderSimpleMesh(meshes["wireframe"], shaders["Topography"], modelMatrix, mapTextures["noise"]);
     //}
 
-    //// multi texturare
+    /* multi texturare */
     //{
     //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     //    glm::mat4 modelMatrix = glm::mat4(1);
@@ -183,7 +208,7 @@ void Tema::Update(float deltaTimeSeconds)
     //    RenderComplexMesh(meshes["wireframe"], shaders["Relief"], modelMatrix, mapTextures["ground"], mapTextures["snow"], mapTextures["noise"]);
     //}
 
-    //// asteroid
+    /* asteroid */
     {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glm::mat4 modelMatrix = glm::mat4(1);
@@ -198,18 +223,38 @@ void Tema::Update(float deltaTimeSeconds)
 
 
     /* FINAL TREE */
-    //{
-    //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    //    glm::mat4 baseMatrix = glm::mat4(1);
-    //    baseMatrix = glm::translate(baseMatrix, glm::vec3(10, 0, 10));
-    //    baseMatrix = glm::translate(baseMatrix, glm::vec3(0.0f, 0.5f, 0.0f));
-    //   // baseMatrix = glm::scale(baseMatrix, glm::vec3(0.125f));
-    //    int maxlevel = 6;
-    //    float initialjava = 2.0f;
-    //    DrawTreeRecursive(maxlevel, maxlevel, baseMatrix, initialjava);
-    //}
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glm::mat4 baseMatrix = glm::mat4(1);
+        baseMatrix = glm::translate(baseMatrix, glm::vec3(10, 0, 10));
+        baseMatrix = glm::translate(baseMatrix, glm::vec3(0.0f, 0.5f, 0.0f));
+       // baseMatrix = glm::scale(baseMatrix, glm::vec3(0.125f));
+        int maxlevel = 6;
+        float initialjava = 2.0f;
+        DrawTreeRecursive(maxlevel, maxlevel, baseMatrix, initialjava, false);
+    }
+
+    /* RANDARE COPACI PE ASTEROID */
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        for (int i = 0; i < treePositions.size(); i++)
+        {
+            glm::vec3 current_pos = treePositions[i];
+            glm::mat4 modelMatrix = glm::mat4(1);
+
+            modelMatrix = glm::translate(modelMatrix, glm::vec3(current_pos.x, 0.0f, current_pos.z));
+            modelMatrix = glm::scale(modelMatrix, glm::vec3(0.125f));
+            int maxlevel = 4;
+            float initialjava = 2.0f;
+
+            DrawTreeRecursive(maxlevel, maxlevel, modelMatrix, initialjava, true);
+
+        }
+    }
 
 
+    /* MARKING PT SELECTIE */
     //{
     //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     //    glm::mat4 modelMatrix = glm::mat4(1);
@@ -225,6 +270,28 @@ void Tema::Update(float deltaTimeSeconds)
 
 void Tema::FrameEnd()
 {
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, selectionFBO);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+    auto resolution = window->GetResolution();
+
+
+    glBlitFramebuffer(0, 0, resolution.x, resolution.y,
+                      0, 0, resolution.x, resolution.y,
+                      GL_COLOR_BUFFER_BIT,
+                      GL_NEAREST);
+
+    // pt overwrite default depth
+     glBlitFramebuffer(0, 0, resolution.x, resolution.y,
+                       0, 0, resolution.x, resolution.y,
+                       GL_DEPTH_BUFFER_BIT,
+                       GL_NEAREST);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
     DrawCoordinateSystem();
 }
 
@@ -503,7 +570,7 @@ void Tema::DrawHelicopter(glm::vec3 helicopterPosition, float deltaTimeSeconds)
 }
 
 
-void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMatrix, float scale)
+void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMatrix, float scale, bool useSpecialShader)
 {
 
     if (level == 0)
@@ -511,7 +578,13 @@ void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMat
 
     glm::mat4 branchMatrix = parentMatrix;
     branchMatrix = glm::scale(branchMatrix, glm::vec3(scale / 4.0f, scale, scale / 4.0f));
-    RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+    if (useSpecialShader == false) {
+        RenderMesh(meshes["tree_part"], shaders["SimpleShader"], branchMatrix);
+    }
+    else if (useSpecialShader == true) {
+      //  RenderMesh(meshes["tree_part"], shaders["PlacementShader"], branchMatrix);
+        RenderTreesMesh(meshes["tree_part"], shaders["TreePlacement"], branchMatrix, mapTextures["noise"]);
+    }
 
     // translate for child branches
     glm::mat4 baseTransform = glm::translate(parentMatrix, glm::vec3(0, 2.5 * scale, 0));
@@ -543,7 +616,7 @@ void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMat
             childMatrix = glm::rotate(childMatrix, tiltZ, glm::vec3(0.0f, 0.0f, 1.0f));
 
 
-            DrawTreeRecursive(level - 1, maxLevel, childMatrix, scale * 0.5);
+            DrawTreeRecursive(level - 1, maxLevel, childMatrix, scale * 0.5, useSpecialShader);
         //}
     }
 
@@ -790,6 +863,55 @@ void Tema::RenderComplexMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
 }
 
 
+void Tema::RenderTreesMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, Texture2D* noiseTexture)
+{
+    if (!mesh || !shader || !shader->GetProgramID())
+        return;
+
+    // Render an object using the specified shader and the specified position
+    glUseProgram(shader->program);
+
+    // Bind model, view, and projection matrices
+    glUniformMatrix4fv(glGetUniformLocation(shader->program, "Model"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
+    glUniformMatrix4fv(glGetUniformLocation(shader->program, "View"), 1, GL_FALSE, glm::value_ptr(GetSceneCamera()->GetViewMatrix()));
+    glUniformMatrix4fv(glGetUniformLocation(shader->program, "Projection"), 1, GL_FALSE, glm::value_ptr(GetSceneCamera()->GetProjectionMatrix()));
+
+
+    if (noiseTexture)
+    {
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, noiseTexture->GetTextureID());
+        glUniform1i(glGetUniformLocation(shader->program, "noise_texture"), 2);
+    }
+
+
+    GLint loc_objID = glGetUniformLocation(shader->program, "objectID");
+    glUniform1f(loc_objID, 10.0f);
+
+
+    //// la fel ca in render complex mesh ccand am facut curbura
+    GLint deformFactor = glGetUniformLocation(shader->program, "deform_factor");
+    //glUniform1f(deformFactor, 5.5f);
+    glUniform1f(deformFactor, 3.5f);
+
+    // curvature_factor
+    GLint locCurv = glGetUniformLocation(shader->program, "curvature_factor");
+    //glUniform1f(locCurv, 0.07f);
+    glUniform1f(locCurv, 0.08f);
+
+    // helicopter_position
+    GLint locHeli = glGetUniformLocation(shader->program, "helicopter_position");
+    //glUniform3f(locHeli, 0.0f, 0.0f, 0.0f);
+    glUniform3f(locHeli, helicopterPosition.x, helicopterPosition.y, helicopterPosition.z);
+
+    // Draw the mesh
+    glBindVertexArray(mesh->GetBuffers()->m_VAO);
+    glDrawElements(mesh->GetDrawMode(), static_cast<int>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
+}
+
+
+
+
 void Tema::LoadShader(const std::string& name)
 {
     std::string shaderPath = PATH_JOIN(window->props.selfDir, "src/lab", "Tema", "shaders");
@@ -803,6 +925,65 @@ void Tema::LoadShader(const std::string& name)
         shader->CreateAndLink();
         shaders[shader->GetName()] = shader;
     }
+}
+
+
+void Tema::CreateSelectionFBO()
+{
+    glGenFramebuffers(1, &selectionFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, selectionFBO);
+
+    // (1) texture 1 - normal color
+    glGenTextures(1, &colorAttachment0Tex);
+    glBindTexture(GL_TEXTURE_2D, colorAttachment0Tex);
+
+    glm::ivec2 resolution = window->GetResolution();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, resolution.x, resolution.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // il salvam ca si COLOR_ATTACHMENT0
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorAttachment0Tex, 0);
+
+
+
+    // (2) texture 2 - (x, 0, z, objectID)
+    glGenTextures(1, &colorAttachment1Tex);
+    glBindTexture(GL_TEXTURE_2D, colorAttachment1Tex);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, resolution.x, resolution.y, 0, GL_RGBA, GL_FLOAT, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, colorAttachment1Tex, 0);
+
+
+
+    // (3) depth texture
+    glGenTextures(1, &depthTexSelection);
+    glBindTexture(GL_TEXTURE_2D, depthTexSelection);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, resolution.x, resolution.y, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexSelection, 0);
+
+    // doua attachments de culoare
+    GLenum drawBuffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    glDrawBuffers(2, drawBuffers);
+
+
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << "Selection FBO not complete!\n";
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 }
 
 
@@ -919,6 +1100,33 @@ void Tema::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 void Tema::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
 {
     // Add mouse button press event
+    if (button == GLFW_MOUSE_BUTTON_RIGHT)
+    {
+        auto resolution = window->GetResolution();
+        int clicked_x = mouseX;
+        int clicked_y = resolution.y - mouseY;
+
+        // citim din colorAttachment1
+        glBindFramebuffer(GL_FRAMEBUFFER, selectionFBO);
+        glReadBuffer(GL_COLOR_ATTACHMENT1);
+
+        float data[4];
+        glReadPixels(clicked_x, clicked_y, 1, 1, GL_RGBA, GL_FLOAT, data);
+
+        float pickX = data[0];
+        float pickY = data[1];
+        float pickZ = data[2];
+        float pickedObjID = data[3];
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        std::cout << "Clicked pixel (" << clicked_x << ", " << clicked_y
+            << ") => (x,z) = (" << pickX << ", " << pickZ
+            << "), objectID = " << pickedObjID << "\n";
+
+        helicopterDestination = glm::vec3(pickX, pickY, pickZ);
+
+    }
 }
 
 

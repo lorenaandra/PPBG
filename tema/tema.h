@@ -44,8 +44,12 @@ namespace lab
         void RenderComplexMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, Texture2D* groundTexture, Texture2D* snowTexture, Texture2D* noiseTexture);
         Mesh* CreateCustomCube(const std::string& meshName, float sideLength, const glm::vec3& color, bool isMultiColored);
         void DrawTreeManually();
-        void DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMatrix, float scale);
+        void DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMatrix, float scale, bool useSpecialShader);
         void DrawHelicopter(glm::vec3 helicopterPosition, float deltaTimeSeconds);
+        void RenderTreesMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, Texture2D* noiseTexture);
+
+
+        void CreateSelectionFBO();
 
 
         std::unordered_map<std::string, Texture2D*> mapTextures;
@@ -58,6 +62,15 @@ namespace lab
         float stopwatch;
         float mark_offset = 0;
         std::string cameraModeMessage = "";
+
+
+        GLuint selectionFBO = 0;
+        GLuint colorAttachment0Tex = 0;  // normal color
+        GLuint colorAttachment1Tex = 0;  // (x, 0, z, objectID)
+        GLuint depthTexSelection = 0;  // depth for the selection FBO
+
+        glm::vec3 helicopterDestination;
+        std::vector<glm::vec3> treePositions;
 
     };
 }   // namespace lab
