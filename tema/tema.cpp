@@ -58,6 +58,9 @@ void Tema::Init()
     LoadShader("Curvature");
     // shader pt plasare copaci pe asteroid
     LoadShader("TreePlacement");
+    // boom
+    LoadExplosionShader("Explosion");
+
 
 
 
@@ -87,6 +90,11 @@ void Tema::Init()
         meshes[mesh->GetMeshID()] = mesh;
     }
 
+    {
+        Mesh* circle = CreateCircle("circle_mesh", 40, 1.0f);
+        meshes["circle"] = circle;
+    }
+
 
     // framebuffer
     CreateSelectionFBO();
@@ -107,9 +115,16 @@ void Tema::Init()
         float randX = (rand() % 200 - 100) / 10.0f; 
         float randZ = (rand() % 200 - 100) / 10.0f;
 
+        //float u = (randX + 10.0) / 20.0f;
+        //float v = (randZ + 10.0) / 20.0f;
+
         treePositions.push_back(glm::vec3(randX, 0.0f, randZ));
+        //treeTextures.push_back(glm::vec2(u, v));
+
+        treeIDs.push_back(100.0f + i);
     }
 
+    isCircleActive = false;
 }
 
 
@@ -139,6 +154,22 @@ void Tema::Update(float deltaTimeSeconds)
 {
     stopwatch += deltaTimeSeconds;
     mark_offset = 1.0f + sin(stopwatch) * 0.5f;
+    if (isCircleActive)
+        if (circle_timing > deltaTimeSeconds)
+            circle_timing -= deltaTimeSeconds;
+        else {
+            circle_timing = 0.0f;
+            isCircleActive = false;
+        }
+    
+    if (explosionActive) {
+        explosionTime += deltaTimeSeconds;
+
+        if (explosionTime > 4.0f) {
+            explosionTime = 0.0f;
+        }
+    }
+    
 
 
     /* CAMERA MODES */
@@ -192,6 +223,7 @@ void Tema::Update(float deltaTimeSeconds)
     //}
 
     /* panza reliefata */
+
     //{
     //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     //    glm::mat4 modelMatrix = glm::mat4(1);
@@ -214,7 +246,12 @@ void Tema::Update(float deltaTimeSeconds)
         glm::mat4 modelMatrix = glm::mat4(1);
         modelMatrix = glm::translate(modelMatrix, glm::vec3(0, 0, 0));
         modelMatrix = glm::scale(modelMatrix, glm::vec3(2.0f));
-        RenderComplexMesh(meshes["wireframe"], shaders["Curvature"], modelMatrix, mapTextures["ground"], mapTextures["snow"], mapTextures["noise"]);
+        if (explosionActive) {
+            RenderComplexMesh(meshes["wireframe"], shaders["Explosion"], modelMatrix, mapTextures["ground"], mapTextures["snow"], mapTextures["noise"]);
+        }
+        else {
+            RenderComplexMesh(meshes["wireframe"], shaders["Curvature"], modelMatrix, mapTextures["ground"], mapTextures["snow"], mapTextures["noise"]);
+        }
     }
 
 
@@ -231,40 +268,62 @@ void Tema::Update(float deltaTimeSeconds)
        // baseMatrix = glm::scale(baseMatrix, glm::vec3(0.125f));
         int maxlevel = 6;
         float initialjava = 2.0f;
-        DrawTreeRecursive(maxlevel, maxlevel, baseMatrix, initialjava, false);
+        DrawTreeRecursive(maxlevel, maxlevel, baseMatrix, initialjava, false, 0.0f);
     }
 
     /* RANDARE COPACI PE ASTEROID */
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-        for (int i = 0; i < treePositions.size(); i++)
+    if (explosionActive == false) {
         {
-            glm::vec3 current_pos = treePositions[i];
-            glm::mat4 modelMatrix = glm::mat4(1);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-            modelMatrix = glm::translate(modelMatrix, glm::vec3(current_pos.x, 0.0f, current_pos.z));
-            modelMatrix = glm::scale(modelMatrix, glm::vec3(0.125f));
-            int maxlevel = 4;
-            float initialjava = 2.0f;
+            for (int i = 0; i < treePositions.size(); i++)
+            {
+                glm::vec3 current_pos = treePositions[i];
+                glm::mat4 modelMatrix = glm::mat4(1);
 
-            DrawTreeRecursive(maxlevel, maxlevel, modelMatrix, initialjava, true);
+                modelMatrix = glm::translate(modelMatrix, glm::vec3(current_pos.x, 0.0f, current_pos.z));
+                modelMatrix = glm::scale(modelMatrix, glm::vec3(0.125f));
+                int maxlevel = 4;
+                float initialjava = 2.0f;
 
+                float current_treeID = treeIDs[i];
+                DrawTreeRecursive(maxlevel, maxlevel, modelMatrix, initialjava, true, current_treeID);
+
+            }
         }
     }
 
 
     /* MARKING PT SELECTIE */
+    if (isCircleActive) {
+        {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            glm::mat4 modelMatrix = glm::mat4(1);
+
+            modelMatrix = glm::translate(modelMatrix, glm::vec3(circlePosition.x, circlePosition.y + mark_offset, circlePosition.z));
+            modelMatrix = glm::scale(modelMatrix, glm::vec3(0.125f / 2, 0.5f / 2, 0.125f / 2));
+            //RenderMesh(meshes["mark"], shaders["SimpleShader"], modelMatrix);
+            RenderTreesMesh(meshes["mark"], shaders["TreePlacement"], modelMatrix, mapTextures["noise"], 998.9f, false);
+        }
+
+        {
+            if (isCircleActive) {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                glm::mat4 modelMatrix = glm::mat4(1);
+                modelMatrix = glm::translate(modelMatrix, glm::vec3( 1 * circlePosition.x, 1.0f + circlePosition.y, 1 * circlePosition.z));
+                modelMatrix = glm::scale(modelMatrix, glm::vec3(0.5f));
+               // RenderMesh(meshes["circle"], shaders["SimpleShader"], modelMatrix);
+
+                RenderTreesMesh(meshes["circle"], shaders["TreePlacement"], modelMatrix, mapTextures["noise"], 997.9f, true);
+            }
+        }
+    }
     //{
     //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     //    glm::mat4 modelMatrix = glm::mat4(1);
-
-    //    modelMatrix = glm::translate(modelMatrix, glm::vec3(0, mark_offset, 0));
-    //    
-    //    modelMatrix = glm::scale(modelMatrix, glm::vec3(0.125f / 2, 0.5f / 2, 0.125f / 2));
-    //    RenderMesh(meshes["mark"], shaders["SimpleShader"], modelMatrix);
+    //    modelMatrix = glm::scale(modelMatrix, glm::vec3(0.5f));
+    //    RenderMesh(meshes["circle"], shaders["SimpleShader"], modelMatrix);
     //}
-
 }
 
 
@@ -570,7 +629,7 @@ void Tema::DrawHelicopter(glm::vec3 helicopterPosition, float deltaTimeSeconds)
 }
 
 
-void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMatrix, float scale, bool useSpecialShader)
+void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMatrix, float scale, bool useSpecialShader, float treeID)
 {
 
     if (level == 0)
@@ -583,7 +642,7 @@ void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMat
     }
     else if (useSpecialShader == true) {
       //  RenderMesh(meshes["tree_part"], shaders["PlacementShader"], branchMatrix);
-        RenderTreesMesh(meshes["tree_part"], shaders["TreePlacement"], branchMatrix, mapTextures["noise"]);
+        RenderTreesMesh(meshes["tree_part"], shaders["TreePlacement"], branchMatrix, mapTextures["noise"], treeID, false);
     }
 
     // translate for child branches
@@ -616,7 +675,7 @@ void Tema::DrawTreeRecursive(int level, int maxLevel, const glm::mat4& parentMat
             childMatrix = glm::rotate(childMatrix, tiltZ, glm::vec3(0.0f, 0.0f, 1.0f));
 
 
-            DrawTreeRecursive(level - 1, maxLevel, childMatrix, scale * 0.5, useSpecialShader);
+            DrawTreeRecursive(level - 1, maxLevel, childMatrix, scale * 0.5, useSpecialShader, treeID);
         //}
     }
 
@@ -842,6 +901,19 @@ void Tema::RenderComplexMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
         glUniform1i(glGetUniformLocation(shader->program, "noise_texture"), 2);
     }
 
+    if (shader == shaders["Explosion"])
+    {
+        GLint loc_time = glGetUniformLocation(shader->program, "time");
+        if (loc_time >= 0) {
+            glUniform1f(loc_time, explosionTime);
+        }
+
+        GLint loc_explFactor = glGetUniformLocation(shader->program, "explosionFactor");
+        if (loc_explFactor >= 0) {
+            glUniform1f(loc_explFactor, explosionFactor);
+        }
+    }
+
 
     GLint deformFactor = glGetUniformLocation(shader->program, "deform_factor");
     //glUniform1f(deformFactor, 5.5f);
@@ -862,8 +934,8 @@ void Tema::RenderComplexMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
     glDrawElements(mesh->GetDrawMode(), static_cast<int>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
 }
 
-
-void Tema::RenderTreesMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, Texture2D* noiseTexture)
+///// plasare pe asteroid !!!!!
+void Tema::RenderTreesMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, Texture2D* noiseTexture, float treeID, bool isCircle)
 {
     if (!mesh || !shader || !shader->GetProgramID())
         return;
@@ -886,14 +958,18 @@ void Tema::RenderTreesMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMat
 
 
     GLint loc_objID = glGetUniformLocation(shader->program, "objectID");
-    glUniform1f(loc_objID, 10.0f);
+    glUniform1f(loc_objID, treeID);
 
 
-    //// la fel ca in render complex mesh ccand am facut curbura
     GLint deformFactor = glGetUniformLocation(shader->program, "deform_factor");
-    //glUniform1f(deformFactor, 5.5f);
-    glUniform1f(deformFactor, 3.5f);
-
+    //// la fel ca in render complex mesh ccand am facut curbura
+    if (isCircle) {
+        glUniform1f(deformFactor, 0.5f);
+    }
+    else {
+        //glUniform1f(deformFactor, 5.5f);
+        glUniform1f(deformFactor, 3.5f);
+    }
     // curvature_factor
     GLint locCurv = glGetUniformLocation(shader->program, "curvature_factor");
     //glUniform1f(locCurv, 0.07f);
@@ -904,12 +980,28 @@ void Tema::RenderTreesMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMat
     //glUniform3f(locHeli, 0.0f, 0.0f, 0.0f);
     glUniform3f(locHeli, helicopterPosition.x, helicopterPosition.y, helicopterPosition.z);
 
+    GLint locBool = glGetUniformLocation(shader->program, "isCircle");
+    glUniform1i(locBool, isCircle);
+
+
     // Draw the mesh
     glBindVertexArray(mesh->GetBuffers()->m_VAO);
     glDrawElements(mesh->GetDrawMode(), static_cast<int>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
 }
 
 
+void Tema::LoadExplosionShader(const std::string& name)
+{
+    std::string shaderPath = PATH_JOIN(window->props.selfDir, "src/lab", "Tema", "shaders");
+    Shader* shader = new Shader(name);
+
+    shader->AddShader(PATH_JOIN(shaderPath, name + ".VS.glsl"), GL_VERTEX_SHADER);
+    shader->AddShader(PATH_JOIN(shaderPath, name + ".GS.glsl"), GL_GEOMETRY_SHADER);
+    shader->AddShader(PATH_JOIN(shaderPath, name + ".FS.glsl"), GL_FRAGMENT_SHADER);
+
+    shader->CreateAndLink();
+    shaders[shader->GetName()] = shader;
+}
 
 
 void Tema::LoadShader(const std::string& name)
@@ -961,6 +1053,25 @@ void Tema::CreateSelectionFBO()
 
 
 
+    // (3) colorAttachment2Tex => final world position
+    glGenTextures(1, &colorAttachment2Tex);
+    glBindTexture(GL_TEXTURE_2D, colorAttachment2Tex);
+
+
+    resolution = window->GetResolution();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
+        resolution.x, resolution.y,
+        0, GL_RGBA, GL_FLOAT, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2,
+        GL_TEXTURE_2D, colorAttachment2Tex, 0);
+
+
+
+
     // (3) depth texture
     glGenTextures(1, &depthTexSelection);
     glBindTexture(GL_TEXTURE_2D, depthTexSelection);
@@ -973,8 +1084,8 @@ void Tema::CreateSelectionFBO()
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexSelection, 0);
 
     // doua attachments de culoare
-    GLenum drawBuffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-    glDrawBuffers(2, drawBuffers);
+    GLenum drawBuffers[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+    glDrawBuffers(3, drawBuffers);
 
 
 
@@ -984,6 +1095,47 @@ void Tema::CreateSelectionFBO()
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+}
+
+
+
+Mesh* Tema::CreateCircle(const std::string& meshName, int slices, float radius)
+{
+    std::vector<VertexFormat> vertices;
+    std::vector<unsigned int> indices;
+
+    // Add the center of the circle
+    vertices.push_back(VertexFormat(glm::vec3(0, 0, 0), glm::vec3(1.0f, 0.584f, 0.851f), glm::vec3(0, 1, 0), glm::vec2(0.5f, 0.5f)));
+
+    // Generate circle vertices
+    for (int i = 0; i < slices; i++) {
+        float angle = 2.0f * M_PI * i / slices;
+        float x = radius * cos(angle);
+        float z = radius * sin(angle);
+
+        // Texture coordinates for the vertex
+        float u = (x / (2 * radius)) + 0.5f; // Normalize to [0, 1]
+        float v = (z / (2 * radius)) + 0.5f; // Normalize to [0, 1]
+
+        vertices.push_back(VertexFormat(glm::vec3(x, 0, z), glm::vec3(1.0f, 0.584f, 0.851f), glm::vec3(0, 1, 0), glm::vec2(u, v)));
+    }
+
+    // Create indices for triangle fan
+    for (int i = 1; i < slices; i++) {
+        indices.push_back(0); // Center
+        indices.push_back(i); // Current vertex
+        indices.push_back(i + 1); // Next vertex
+    }
+
+    // Connect the last vertex to the first
+    indices.push_back(0);
+    indices.push_back(slices);
+    indices.push_back(1);
+
+    // Create and return the mesh
+    Mesh* circle = new Mesh(meshName);
+    circle->InitFromData(vertices, indices);
+    return circle;
 }
 
 
@@ -1048,28 +1200,19 @@ void Tema::OnInputUpdate(float deltaTime, int mods)
     }
 }
 
-//void Tema::UpdateCamera()
-//{
-//    auto camera = GetSceneCamera();
-//
-//    // Adjust the relative position as needed
-//    glm::vec3 relativeCameraPosition = glm::vec3(0.0f, 2.0f, -5.0f);
-//
-//    // Rotate the relative position based on helicopter's rotation
-//    glm::vec3 rotatedCameraPosition = glm::vec3(
-//        glm::rotate(glm::mat4(1.0f), rotation, glm::vec3(0, 1, 0)) * glm::vec4(relativeCameraPosition, 1.0f)
-//    );
-//
-//    // Set camera position and orientation
-//    camera->SetPosition(helicopterPosition + rotatedCameraPosition);
-//
-//    // Camera looks at the helicopter
-//    camera->SetRotation(glm::quatLookAt(glm::normalize(helicopterPosition - camera->m_transform->GetWorldPosition()), glm::vec3(0, 1, 0)));
-//}
-
 
 void Tema::OnKeyPress(int key, int mods)
 {
+    if (window->KeyHold(GLFW_KEY_X)) {
+
+        explosionActive = !explosionActive;
+
+        if (explosionActive) {
+            explosionTime = 0.0f;
+            cout << "!!!!! EXPLOSION TRIGGERED !!!!!" << endl;
+        }
+    }
+
     // Add key press event
     if (key == GLFW_KEY_P)
     {
@@ -1118,14 +1261,40 @@ void Tema::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
         float pickZ = data[2];
         float pickedObjID = data[3];
 
+       // glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+        //glBindFramebuffer(GL_FRAMEBUFFER, selectionFBO);
+        glReadBuffer(GL_COLOR_ATTACHMENT2);
+        float frag_world_position[3];
+        glReadPixels(clicked_x, clicked_y, 1, 1, GL_RGBA, GL_FLOAT, frag_world_position);
+
+
+        circlePosition = glm::vec3(frag_world_position[0], frag_world_position[1], frag_world_position[2]);
+
+        if (frag_world_position[0] != 0.0f && frag_world_position[1] != 0.0f && frag_world_position[2] != 0.0f)
+            isCircleActive = true;
+
+        circle_timing = 3.0f;
+
+
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+        if (pickedObjID >= 100.0f && pickedObjID < 130.0f) {
+            int iTree = (int)(pickedObjID);
+            std::cout << "You clicked on tree with index " << iTree << "!\n";
+        }
 
         std::cout << "Clicked pixel (" << clicked_x << ", " << clicked_y
             << ") => (x,z) = (" << pickX << ", " << pickZ
             << "), objectID = " << pickedObjID << "\n";
 
-        helicopterDestination = glm::vec3(pickX, pickY, pickZ);
 
+        std::cout << "World Position: (" << frag_world_position[0] << ", "
+            << frag_world_position[1] << ", " << frag_world_position[2] << ")\n";
+
+       
     }
 }
 
@@ -1144,3 +1313,9 @@ void Tema::OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY)
 void Tema::OnWindowResize(int width, int height)
 {
 }
+
+// DONE de reparat cu pozitia copacilor pe relief sa fie ok
+// DONE de generat id uri unice pt obiecte
+// faulty - de plasat marcaje unde se da click
+// nu mai fac - de fugarit elicopteru la clicked position
+// de incercat o explozie si pa
