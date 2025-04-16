@@ -165,12 +165,12 @@ void Tema::Update(float deltaTimeSeconds)
     if (explosionActive) {
         explosionTime += deltaTimeSeconds;
 
-        if (explosionTime > 4.0f) {
-            explosionTime = 0.0f;
-        }
+        if (explosionTime > 3.0f)
+            explosionTime = 3.0f;
+
     }
     
-
+    float explosionFactor = (explosionTime / 3.0f) * 10.0f;
 
     /* CAMERA MODES */
     glm::vec3 direction;

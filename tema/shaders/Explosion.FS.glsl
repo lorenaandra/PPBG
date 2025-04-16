@@ -1,25 +1,29 @@
-#version 330 core
+#version 330
 
-// Inputs coming from geometry stage
-in vec2 gs_texCoord;
-in float gs_preCurvHeight;
+// Input 
+in vec2 out_texCoord;
+in float out_precurv_height;
 
-// Uniform textures
+
+// Uniform properties
 uniform sampler2D ground_texture;
 uniform sampler2D snow_texture;
+
 
 // Output color
 layout(location = 0) out vec4 out_color;
 
 
-
 void main()
 {
+    vec4 ground_color = texture(ground_texture, out_texCoord);
+    vec4 snow_color = texture(snow_texture, out_texCoord);
 
-    vec4 groundColor = texture(ground_texture, gs_texCoord);
-    vec4 snowColor   = texture(snow_texture,  gs_texCoord);
+    // blend factor pt texturi - cu inaltimea inainte de aplicarea curburii
+    float blend_factor = smoothstep(0.3, 4.0, out_precurv_height);
 
-    float blendFactor = smoothstep(0.3, 4.0, gs_preCurvHeight);
+    vec4 mix_color = mix(ground_color, snow_color, blend_factor);
 
-    out_color = mix(groundColor, snowColor, blendFactor);
+    out_color = mix_color;
+
 }
